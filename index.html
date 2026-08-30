@@ -409,9 +409,10 @@
 
             <div class="section-title" style="margin-top:16px;">Camera</div>
             <div class="row-2">
-                <div class="field-group"><label>Camera Latitude</label><input type="number" id="initialCameraLat" step="1"></div>
+                <div class="field-group"><label>Home Camera Latitude</label><input type="number" id="initialCameraLat" step="1"></div>
                 <div class="field-group"><label>Camera Altitude</label><input type="number" id="initialAltitude" step="0.05" min="0.1" max="4"></div>
             </div>
+            <div class="hint" style="margin-top:-8px; margin-bottom:10px;">The camera automatically tilts up/down to center whichever locations are currently rotating into view (so Southern-Hemisphere locations aren't stuck near the edge) — this is just the neutral latitude it eases back to over stretches with no nearby locations.</div>
             <div class="field-group">
                 <label>Starting Longitude</label>
                 <input type="number" id="startLng" step="1">
@@ -667,6 +668,11 @@
     let paused = false;
     let sequentialIndex = 0;
     let lastSequentialUpdate = 0;
+    // The camera's latitude while rotating — not fixed. It drifts toward whichever
+    // institutions are currently swinging into view (see computeTargetCameraLat), so
+    // Southern-Hemisphere locations get properly centered too instead of always sitting near
+    // the bottom edge of a globe permanently tilted toward the Northern Hemisphere.
+    let currentCameraLat = CONFIG.rotation.initialCameraLat;
 
     function initGlobe(){
         globe = Globe()
@@ -795,6 +801,31 @@
         return isInSlowZone(lng) ? CONFIG.rotation.slowZoneSpeed : CONFIG.rotation.baseSpeed;
     }
 
+    // Blends toward the latitude of whichever institutions are near the current longitude
+    // (reusing the same angular falloff already used for label opacity), so the camera tilts
+    // down to properly center Southern-Hemisphere locations as they rotate into view instead
+    // of staying pinned at "Camera Latitude" the whole time. The configured "Camera Latitude"
+    // still acts as a gentle home base — it's blended in at a fixed weight, so the view eases
+    // back to a neutral framing over longitudes with no nearby institutions (e.g. open ocean).
+    function computeTargetCameraLat(currentLng){
+        const w = CONFIG.rotation.labelWindowDegrees;
+        let weightSum = 0, latSum = 0;
+        CONFIG.institutions.forEach(inst => {
+            let diff = Math.abs(inst.lng - currentLng);
+            if (diff > 180) diff = 360 - diff;
+            if (diff < w){
+                const weight = 1 - diff / w;
+                weightSum += weight;
+                latSum += weight * inst.lat;
+            }
+        });
+        const homeWeight = 0.4;
+        weightSum += homeWeight;
+        latSum += homeWeight * CONFIG.rotation.initialCameraLat;
+        return latSum / weightSum;
+    }
+    const CAMERA_TILT_TIME_CONSTANT = 1.4; // seconds — how quickly the camera eases to a new latitude
+
     // Rotation is driven by elapsed wall-clock time (not a fixed "degrees per tick"), so it
     // stays smooth regardless of how fast requestAnimationFrame actually fires. The previous
     // fixed-per-tick version assumed a steady 60fps; whenever the browser dropped frames
@@ -812,7 +843,12 @@
         if (!paused){
             angle += getRotationSpeed(angle) * dt;
             if (angle >= 360) angle -= 360;
-            globe.pointOfView({ lat: CONFIG.rotation.initialCameraLat, lng: angle, altitude: CONFIG.rotation.initialAltitude });
+
+            const targetLat = computeTargetCameraLat(angle);
+            const smoothing = 1 - Math.exp(-dt / CAMERA_TILT_TIME_CONSTANT);
+            currentCameraLat += (targetLat - currentCameraLat) * smoothing;
+
+            globe.pointOfView({ lat: currentCameraLat, lng: angle, altitude: CONFIG.rotation.initialAltitude });
         }
 
         const pov = globe.pointOfView();
@@ -1167,6 +1203,7 @@
         const alt = parseFloat(document.getElementById('povAlt').value);
         if (!paused) togglePause();
         angle = ((lng % 360) + 360) % 360;
+        currentCameraLat = lat; // so resuming rotation eases on from here, not the old auto-tilt value
         globe.pointOfView({ lat, lng, altitude: alt }, 400);
     });
 
@@ -1180,6 +1217,7 @@
     document.getElementById('resetRotationBtn').addEventListener('click', () => {
         readRotationForm();
         angle = CONFIG.rotation.startLng;
+        currentCameraLat = CONFIG.rotation.initialCameraLat;
     });
 
     document.querySelectorAll('input[name="durMode"]').forEach(r => {
@@ -1489,6 +1527,7 @@
             .then(externalConfig => {
                 if (externalConfig) CONFIG = mergeDeep(deepClone(DEFAULT_CONFIG), externalConfig);
                 angle = CONFIG.rotation.startLng;
+                currentCameraLat = CONFIG.rotation.initialCameraLat;
                 document.title = CONFIG.branding.pageTitle;
                 document.getElementById('pageTitleTag').textContent = CONFIG.branding.pageTitle;
                 fillFormsFromConfig();
