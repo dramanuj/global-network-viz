@@ -232,11 +232,17 @@
         align-items: center;
         margin-bottom: 8px;
     }
-    .country-row input[type="text"] { flex: 1; }
-    .country-row input[type="color"] { width: 44px; flex-shrink: 0; }
-    .country-row .remove-btn {
-        background: none; border: none; color: var(--danger); font-size: 15px; cursor: pointer;
+    .country-row .country-name {
+        flex: 1;
+        font-size: 12.5px;
+        color: #eee2d0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
+    .country-row.disabled .country-name { color: #766a56; text-decoration: line-through; }
+    .country-row input[type="color"] { width: 44px; flex-shrink: 0; }
+    .country-row input[type="checkbox"] { width: auto; flex-shrink: 0; }
 
     button.btn {
         background: #2a2115;
@@ -334,9 +340,8 @@
         <!-- COUNTRIES -->
         <div class="tab-content" id="tab-countries" hidden>
             <div class="section-title">Highlighted Countries</div>
-            <div class="hint" style="margin-bottom:10px;">Country name must match the world map's English name (e.g. "United States of America", "United Kingdom").</div>
+            <div class="hint" style="margin-bottom:10px;">This list is automatic — it's built from the "Country" field of your locations (Locations tab), matched against the world map's English name (e.g. "United States of America", "United Kingdom"). To add or remove a country here, add or remove a location with that country, or edit a location's Country field. Use the checkbox to show or hide a country's highlight without touching your locations.</div>
             <div id="countriesList"></div>
-            <button class="btn" id="addCountryBtn">+ Add Country</button>
             <div class="field-group" style="margin-top:14px;">
                 <label>Unhighlighted Country Fill</label>
                 <input type="text" id="polygonDefaultColor">
@@ -392,42 +397,41 @@
 
         <!-- ROTATION -->
         <div class="tab-content" id="tab-rotation" hidden>
-            <div class="section-title">Rotation Speed</div>
+            <div class="section-title">Guided Tour</div>
+            <div class="hint" style="margin-bottom:10px;">The globe visits every location in turn, traveling eastward and stopping (with the camera properly centered) at each one — so nothing gets missed, however your locations are spread out.</div>
             <div class="field-group">
-                <label>Base Speed (deg / sec)</label>
-                <input type="number" id="baseSpeed" step="0.5" min="0">
+                <label>Travel Speed (deg / sec)</label>
+                <input type="number" id="travelSpeed" step="0.5" min="1">
+                <div class="hint">How fast the globe spins while moving between locations.</div>
             </div>
             <div class="field-group">
-                <label>Slow-Zone Speed (deg / sec)</label>
-                <input type="number" id="slowZoneSpeed" step="0.5" min="0">
-                <div class="hint">The globe slows down while this longitude band is centered in view — handy for lingering over a dense cluster of locations.</div>
-            </div>
-            <div class="row-2">
-                <div class="field-group"><label>Slow Zone Start (lng)</label><input type="number" id="slowZoneStart" step="1"></div>
-                <div class="field-group"><label>Slow Zone End (lng)</label><input type="number" id="slowZoneEnd" step="1"></div>
+                <label>Cluster Grouping Distance (degrees)</label>
+                <input type="number" id="clusterGapDegrees" step="1" min="0">
+                <div class="hint">Locations within this many degrees of longitude of each other are treated as one stop and shown together (taking turns, see below). Raise it to group more into each stop; lower it to give every location its own stop. Tune this to match how your own locations are spread out — dense regional clusters usually want a smaller value, widely-scattered locations a larger one.</div>
             </div>
 
             <div class="section-title" style="margin-top:16px;">Camera</div>
             <div class="row-2">
-                <div class="field-group"><label>Home Camera Latitude</label><input type="number" id="initialCameraLat" step="1"></div>
+                <div class="field-group"><label>Starting Camera Latitude</label><input type="number" id="initialCameraLat" step="1"></div>
                 <div class="field-group"><label>Camera Altitude</label><input type="number" id="initialAltitude" step="0.05" min="0.1" max="4"></div>
             </div>
-            <div class="hint" style="margin-top:-8px; margin-bottom:10px;">The camera automatically tilts up/down to center whichever locations are currently rotating into view (so Southern-Hemisphere locations aren't stuck near the edge) — this is just the neutral latitude it eases back to over stretches with no nearby locations.</div>
+            <div class="hint" style="margin-top:-8px; margin-bottom:10px;">The camera automatically centers on each stop (latitude and longitude both) as the tour reaches it. These fields only set where the camera starts, before the tour's first stop.</div>
             <div class="field-group">
                 <label>Starting Longitude</label>
                 <input type="number" id="startLng" step="1">
             </div>
-            <button class="btn small" id="resetRotationBtn">Reset Rotation to Start</button>
+            <button class="btn small" id="resetRotationBtn">Reset Tour to Start</button>
 
             <div class="section-title" style="margin-top:16px;">Labels</div>
             <div class="field-group">
                 <label>Label Visibility Window (degrees)</label>
                 <input type="number" id="labelWindowDegrees" step="5" min="5" max="180">
+                <div class="hint">A location's label fades in whenever it's within this many degrees of wherever the camera currently is — every nearby location shows at once (not one at a time), so make sure this comfortably covers your widest cluster's spread (should generally be a good bit larger than "Cluster Grouping Distance" above).</div>
             </div>
             <div class="field-group">
                 <label>Sequential Label Duration (ms)</label>
                 <input type="number" id="sequentialDisplayDuration" step="100" min="200">
-                <div class="hint">Locations with priority "sequential" (e.g. several nearby universities) take turns being shown, one at a time, for this many milliseconds each.</div>
+                <div class="hint">Also sets how long each stop is dwelled on (more locations sharing a stop means more dwell time). Separately, locations with Priority "Sequential" take turns being shown one at a time for this many milliseconds each — useful for a handful of locations packed too closely together to show all their labels without overlapping.</div>
             </div>
         </div>
 
@@ -586,14 +590,12 @@
             markerEmoji: "📍"
         },
         rotation: {
-            baseSpeed: 18,
-            slowZoneStart: 350,
-            slowZoneEnd: 30,
-            slowZoneSpeed: 3,
+            travelSpeed: 25,
+            clusterGapDegrees: 10,
+            labelWindowDegrees: 30,
             initialCameraLat: 50,
             initialAltitude: 1.0,
             startLng: 10,
-            labelWindowDegrees: 60,
             sequentialDisplayDuration: 2000
         },
         countries: {
@@ -614,21 +616,28 @@
             "Australia": "#b39c7d",
             "Kenya": "#b39c7d"
         },
+        // Countries in this list whose highlight is toggled off (still tracked, just not
+        // colored on the globe) — kept in sync with `countries` by syncCountriesFromInstitutions.
+        disabledCountries: [],
         // Demonstration data: DTU's real strategic alliances & partner universities, per
         // https://www.dtu.dk/english/about/profile/international-collaboration/alliances-and-strategic-partnerships
         institutions: [
             { name: "DTU (Technical University of Denmark)", lat: 55.7866, lng: 12.5231, country: "Denmark", priority: "always", highlight: true },
-            // EuroTech Universities Alliance partners (cycle one at a time, like the original demo's clustered group)
+            // EuroTech Universities Alliance partners. The 4 tightly-packed ones (within ~9°
+            // of each other) use "sequential" so their label boxes take turns instead of
+            // overlapping; Technion is far enough away (28°+) not to need that.
             { name: "EPFL (École Polytechnique Fédérale de Lausanne)", lat: 46.5191, lng: 6.5668, country: "Switzerland", priority: "sequential", highlight: false },
             { name: "Institut Polytechnique de Paris", lat: 48.7135, lng: 2.2075, country: "France", priority: "sequential", highlight: false },
             { name: "Technical University of Munich (TUM)", lat: 48.1497, lng: 11.5678, country: "Germany", priority: "sequential", highlight: false },
             { name: "Eindhoven University of Technology (TU/e)", lat: 51.4488, lng: 5.4900, country: "Netherlands", priority: "sequential", highlight: false },
-            { name: "Technion – Israel Institute of Technology", lat: 32.7767, lng: 35.0231, country: "Israel", priority: "sequential", highlight: false },
-            // Nordic Five Tech alliance partners
-            { name: "Chalmers University of Technology", lat: 57.6828, lng: 11.9764, country: "Sweden", priority: "normal", highlight: false },
-            { name: "KTH Royal Institute of Technology", lat: 59.3498, lng: 18.0686, country: "Sweden", priority: "normal", highlight: false },
-            { name: "NTNU (Norwegian University of Science and Technology)", lat: 63.4194, lng: 10.4025, country: "Norway", priority: "normal", highlight: false },
-            { name: "Aalto University", lat: 60.1841, lng: 24.8296, country: "Finland", priority: "normal", highlight: false },
+            { name: "Technion – Israel Institute of Technology", lat: 32.7767, lng: 35.0231, country: "Israel", priority: "normal", highlight: false },
+            // Nordic Five Tech alliance partners — also tightly packed with the group above, so
+            // also "sequential" to avoid overlapping label boxes (DTU stays "always" and shows
+            // throughout; these 8 take turns).
+            { name: "Chalmers University of Technology", lat: 57.6828, lng: 11.9764, country: "Sweden", priority: "sequential", highlight: false },
+            { name: "KTH Royal Institute of Technology", lat: 59.3498, lng: 18.0686, country: "Sweden", priority: "sequential", highlight: false },
+            { name: "NTNU (Norwegian University of Science and Technology)", lat: 63.4194, lng: 10.4025, country: "Norway", priority: "sequential", highlight: false },
+            { name: "Aalto University", lat: 60.1841, lng: 24.8296, country: "Finland", priority: "sequential", highlight: false },
             // Other global strategic partner universities
             { name: "Cornell University", lat: 42.4534, lng: -76.4735, country: "USA", priority: "normal", highlight: false },
             { name: "North Carolina State University", lat: 35.7847, lng: -78.6821, country: "USA", priority: "normal", highlight: false },
@@ -664,15 +673,154 @@
     // ---------------------------------------------------------------------
     let globe;
     let worldCountries = null;
-    let angle = CONFIG.rotation.startLng;
     let paused = false;
+    let angle = CONFIG.rotation.startLng;
+    let currentCameraLat = CONFIG.rotation.initialCameraLat;
+
+    // Label visibility is independent of the tour's phase (traveling/dwelling) — a label shows
+    // whenever it's within "Label Visibility Window" degrees of wherever the camera actually is
+    // right now, exactly like the original design. This means every nearby location shows
+    // *simultaneously* (not gated behind the tour, and not one-at-a-time), whether the camera
+    // got there via the tour, a manual "Apply View", or the user dragging the globe by hand
+    // while paused to frame a screenshot. "sequential"-tagged locations are the one opt-in
+    // exception: they take turns among themselves (handy for a handful of locations packed too
+    // closely together to show all their label boxes at once without overlapping).
+    let cachedSequential = [];
     let sequentialIndex = 0;
     let lastSequentialUpdate = 0;
-    // The camera's latitude while rotating — not fixed. It drifts toward whichever
-    // institutions are currently swinging into view (see computeTargetCameraLat), so
-    // Southern-Hemisphere locations get properly centered too instead of always sitting near
-    // the bottom edge of a globe permanently tilted toward the Northern Hemisphere.
-    let currentCameraLat = CONFIG.rotation.initialCameraLat;
+
+    // ---------------------------------------------------------------------
+    // Guided tour: the globe visits every "stop" (one or more nearby locations, grouped by
+    // computeStops) in turn, sweeping eastward between them and pausing — camera properly
+    // centered on both lat and lng — for a fixed dwell at each one. See the full explanation
+    // above the animate() function below.
+    // ---------------------------------------------------------------------
+    let stops = [];
+    let tourPhase = 'traveling'; // 'traveling' | 'dwelling'
+    let currentStopIdx = 0;      // which stop we're dwelling at (meaningful while 'dwelling')
+    let phaseStartAngle = 0, phaseStartLat = 0, phaseTargetLat = 0, phaseTravelDeg = 0, phaseProgressDeg = 0;
+    let dwellRemaining = 0;
+
+    function circDiff(a, b){
+        const d = Math.abs(a - b) % 360;
+        return d > 180 ? 360 - d : d;
+    }
+    function smoothstep(t){
+        return t * t * (3 - 2 * t);
+    }
+
+    // Groups locations into "stops" by proximity in longitude, rather than a fixed-size grid —
+    // a grid can awkwardly split two locations that are 2° apart but straddle a boundary, or
+    // lump together locations 30° apart that happen to land in the same cell. Proximity
+    // clustering (merge if the gap to the next-nearest location is under "Cluster Grouping
+    // Distance") adapts to however locations actually happen to be distributed, whether that's
+    // one dense region, several regional clusters, or points scattered evenly worldwide.
+    function computeStops(){
+        const institutions = CONFIG.institutions;
+        if (!institutions.length) return [];
+
+        const items = institutions.map(inst => ({ inst, lng360: ((inst.lng % 360) + 360) % 360 }));
+        items.sort((a, b) => a.lng360 - b.lng360);
+        const n = items.length;
+
+        // Find the single widest circular gap between consecutive locations and treat it as
+        // the "seam" to cut the circle at, so the rest can be walked as a plain non-wrapping
+        // ascending sequence (avoids having to special-case the 0°/360° boundary below).
+        let maxGap = -1, cutIndex = 0;
+        for (let i = 0; i < n; i++){
+            const next = items[(i + 1) % n];
+            let gap = next.lng360 - items[i].lng360;
+            if (gap <= 0) gap += 360;
+            if (gap > maxGap){ maxGap = gap; cutIndex = (i + 1) % n; }
+        }
+        const head = items.slice(cutIndex);
+        const tail = items.slice(0, cutIndex).map(it => ({ inst: it.inst, lng360: it.lng360 + 360 }));
+        const ordered = head.concat(tail); // now monotonically non-decreasing
+
+        const gapThreshold = Math.max(0, CONFIG.rotation.clusterGapDegrees);
+        const clusters = [[ordered[0]]];
+        for (let i = 1; i < ordered.length; i++){
+            if (ordered[i].lng360 - ordered[i - 1].lng360 <= gapThreshold){
+                clusters[clusters.length - 1].push(ordered[i]);
+            } else {
+                clusters.push([ordered[i]]);
+            }
+        }
+
+        return clusters.map(members => ({
+            lng: (members.reduce((s, m) => s + m.lng360, 0) / members.length) % 360,
+            lat: members.reduce((s, m) => s + m.inst.lat, 0) / members.length,
+            institutions: members.map(m => m.inst)
+        }));
+    }
+
+    function startTravelToStop(idx){
+        const target = stops[idx];
+        phaseStartAngle = angle;
+        phaseStartLat = currentCameraLat;
+        let dist = target.lng - phaseStartAngle;
+        dist = ((dist % 360) + 360) % 360;
+        if (dist < 0.01) dist = 360; // e.g. only one stop total — travel all the way around back to it
+        phaseTravelDeg = dist;
+        phaseTargetLat = target.lat;
+        phaseProgressDeg = 0;
+        currentStopIdx = idx;
+        tourPhase = 'traveling';
+    }
+
+    function startDwellAtStop(idx){
+        currentStopIdx = idx;
+        const stop = stops[idx];
+        angle = stop.lng;
+        currentCameraLat = stop.lat;
+        // More locations sharing a stop means more label text to read, so scale the dwell time
+        // with how many are there (even though they display simultaneously, not one at a time —
+        // see the label-visibility block in animate() for that).
+        const perMember = Math.max(0.3, CONFIG.rotation.sequentialDisplayDuration / 1000);
+        dwellRemaining = Math.max(perMember, stop.institutions.length * perMember);
+        tourPhase = 'dwelling';
+    }
+
+    // Recomputes the stop list (call whenever the location data changes) and restarts the tour
+    // from "Starting Longitude" toward the first stop.
+    function resetTour(){
+        stops = computeStops();
+        angle = CONFIG.rotation.startLng;
+        currentCameraLat = CONFIG.rotation.initialCameraLat;
+        if (!stops.length) return;
+        // Start from whichever stop is nearest "Starting Longitude" (your home location), not
+        // stops[0] — computeStops() orders stops by cutting the circle at the widest gap
+        // between locations purely so the eastward traversal is consistent, which can put any
+        // stop first (e.g. the widest gap in this data is the Pacific, putting a North America
+        // stop first) regardless of where you actually want the tour to begin.
+        let bestIdx = 0, bestDist = Infinity;
+        stops.forEach((s, i) => {
+            const d = circDiff(s.lng, angle);
+            if (d < bestDist){ bestDist = d; bestIdx = i; }
+        });
+        startTravelToStop(bestIdx);
+    }
+
+    // Picks whichever stop is nearest ahead (eastward) of the camera's current position and
+    // resumes traveling toward it — used when rotation resumes after being paused (e.g. after
+    // the user manually orbited the globe for a screenshot), so the tour continues sensibly
+    // from wherever the camera actually is instead of jumping back to the start.
+    function resumeTourFromCurrentView(){
+        if (!stops.length) return;
+        // Sync to the camera's actual live position first — while paused, the user may have
+        // manually dragged/orbited the globe (e.g. to frame a screenshot), which moves the
+        // real camera without updating our internal `angle`/`currentCameraLat`. Resuming from
+        // the stale values would snap the view back to wherever it was *before* the drag.
+        const pov = globe.pointOfView();
+        angle = ((pov.lng % 360) + 360) % 360;
+        currentCameraLat = pov.lat;
+        let bestIdx = 0, bestDist = Infinity;
+        stops.forEach((s, i) => {
+            const d = ((s.lng - angle) % 360 + 360) % 360;
+            if (d < bestDist){ bestDist = d; bestIdx = i; }
+        });
+        startTravelToStop(bestIdx);
+    }
 
     function initGlobe(){
         globe = Globe()
@@ -693,13 +841,17 @@
     }
 
     function loadWorldAndRender(){
-        fetch('https://unpkg.com/world-atlas@2/countries-110m.json')
+        // The 110m-resolution atlas omits several small nations entirely (confirmed via a
+        // real headless-browser test: it has no "Singapore" feature at all, so no country name
+        // could ever have highlighted it) — 50m includes 241 countries vs. 110m's 177, at the
+        // cost of a larger one-time download (~740KB vs. ~105KB).
+        fetch('https://unpkg.com/world-atlas@2/countries-50m.json')
             .then(res => res.json())
             .then(worldData => {
                 worldCountries = topojson.feature(worldData, worldData.objects.countries).features;
                 renderPolygons();
-                renderPointsAndLabels();
-                globe.pointOfView({ lat: CONFIG.rotation.initialCameraLat, lng: CONFIG.rotation.startLng, altitude: CONFIG.rotation.initialAltitude }, 0);
+                renderPointsAndLabels(); // also computes stops and starts the tour (resetTour)
+                globe.pointOfView({ lat: currentCameraLat, lng: angle, altitude: CONFIG.rotation.initialAltitude }, 0);
                 document.getElementById('loadingMsg').style.display = 'none';
                 updateOverlay();
                 requestAnimationFrame(animate);
@@ -714,7 +866,11 @@
         if (!worldCountries) return;
         globe.polygonsData(worldCountries)
             .polygonAltitude(CONFIG.style.polygonAltitude)
-            .polygonCapColor(feat => CONFIG.countries[feat.properties.name] || CONFIG.style.polygonDefaultColor)
+            .polygonCapColor(feat => {
+                const name = feat.properties.name;
+                if (CONFIG.disabledCountries.includes(name)) return CONFIG.style.polygonDefaultColor;
+                return CONFIG.countries[name] || CONFIG.style.polygonDefaultColor;
+            })
             .polygonSideColor(() => 'rgba(0, 0, 0, 0)')
             .polygonStrokeColor(() => CONFIG.style.polygonStrokeColor);
     }
@@ -730,23 +886,14 @@
             .htmlElement(buildLabelElement)
             .htmlAltitude(0.03);
 
-        refreshLabelCache();
-    }
-
-    // Cached "sequential" subset of institutions, refreshed whenever the data changes, so the
-    // per-frame animation loop doesn't need to re-filter the config on every tick.
-    //
-    // NOTE: the actual label *DOM elements* are intentionally NOT cached — globe.gl creates
-    // them asynchronously on its own internal render cycle after .htmlElementsData() is set,
-    // and a single requestAnimationFrame delay isn't a reliable guarantee that all of them
-    // exist yet (this previously caused whichever institutions were created last — e.g. ones
-    // near the end of a long list — to be silently skipped forever, since their opacity was
-    // never touched again). document.querySelectorAll() on ~20 simple elements is cheap enough
-    // that querying it fresh each frame isn't a meaningful cost next to the real jitter fixes
-    // (avoiding getComputedStyle, throttling video compositing, etc.).
-    let cachedSequential = [];
-    function refreshLabelCache(){
+        // NOTE: the label *DOM elements* used in animate() below are intentionally re-queried
+        // live each frame rather than cached — globe.gl creates them asynchronously on its own
+        // internal render cycle after .htmlElementsData() is set, and caching the list too
+        // early previously caused whichever institutions were created last (e.g. ones near the
+        // end of a long list) to be silently skipped forever. document.querySelectorAll() on
+        // ~20 simple elements is cheap enough that this isn't a meaningful per-frame cost.
         cachedSequential = CONFIG.institutions.filter(i => i.priority === 'sequential');
+        resetTour();
     }
 
     function buildLabelElement(d){
@@ -796,47 +943,11 @@
     // ---------------------------------------------------------------------
     // Rotation / label animation
     // ---------------------------------------------------------------------
-    function isInSlowZone(lng){
-        const n = ((lng % 360) + 360) % 360;
-        const s = CONFIG.rotation.slowZoneStart, e = CONFIG.rotation.slowZoneEnd;
-        return s > e ? (n >= s || n <= e) : (n >= s && n <= e);
-    }
-    function getRotationSpeed(lng){
-        return isInSlowZone(lng) ? CONFIG.rotation.slowZoneSpeed : CONFIG.rotation.baseSpeed;
-    }
-
-    // Blends toward the latitude of whichever institutions are near the current longitude
-    // (reusing the same angular falloff already used for label opacity), so the camera tilts
-    // down to properly center Southern-Hemisphere locations as they rotate into view instead
-    // of staying pinned at "Camera Latitude" the whole time. The configured "Camera Latitude"
-    // still acts as a gentle home base — it's blended in at a fixed weight, so the view eases
-    // back to a neutral framing over longitudes with no nearby institutions (e.g. open ocean).
-    function computeTargetCameraLat(currentLng){
-        const w = CONFIG.rotation.labelWindowDegrees;
-        let weightSum = 0, latSum = 0;
-        CONFIG.institutions.forEach(inst => {
-            let diff = Math.abs(inst.lng - currentLng);
-            if (diff > 180) diff = 360 - diff;
-            if (diff < w){
-                const weight = 1 - diff / w;
-                weightSum += weight;
-                latSum += weight * inst.lat;
-            }
-        });
-        const homeWeight = 0.4;
-        weightSum += homeWeight;
-        latSum += homeWeight * CONFIG.rotation.initialCameraLat;
-        return latSum / weightSum;
-    }
-    const CAMERA_TILT_TIME_CONSTANT = 1.4; // seconds — how quickly the camera eases to a new latitude
-
     // Rotation is driven by elapsed wall-clock time (not a fixed "degrees per tick"), so it
-    // stays smooth regardless of how fast requestAnimationFrame actually fires. The previous
-    // fixed-per-tick version assumed a steady 60fps; whenever the browser dropped frames
-    // (e.g. from the extra work of compositing an export frame) the globe would visibly lurch,
-    // because a dropped tick was simply a missed step rather than a bigger one. Using real
-    // elapsed time means a slow tick just advances the angle further, keeping angular speed
-    // constant — which is also what MediaRecorder needs to produce non-jittery video.
+    // stays smooth regardless of how fast requestAnimationFrame actually fires — a slow tick
+    // (e.g. from the extra work of compositing an export frame) just advances further next
+    // time rather than visibly lurching, and it's also what MediaRecorder needs for non-jittery
+    // video.
     let lastFrameTime = null;
 
     function animate(timestamp){
@@ -844,41 +955,56 @@
         const dt = Math.min((timestamp - lastFrameTime) / 1000, 0.25);
         lastFrameTime = timestamp;
 
-        if (!paused){
-            angle += getRotationSpeed(angle) * dt;
-            if (angle >= 360) angle -= 360;
-
-            const targetLat = computeTargetCameraLat(angle);
-            const smoothing = 1 - Math.exp(-dt / CAMERA_TILT_TIME_CONSTANT);
-            currentCameraLat += (targetLat - currentCameraLat) * smoothing;
-
+        if (!paused && stops.length){
+            if (tourPhase === 'traveling'){
+                phaseProgressDeg += CONFIG.rotation.travelSpeed * dt;
+                if (phaseProgressDeg >= phaseTravelDeg){
+                    startDwellAtStop(currentStopIdx);
+                } else {
+                    angle = (phaseStartAngle + phaseProgressDeg) % 360;
+                    const t = smoothstep(phaseProgressDeg / phaseTravelDeg);
+                    currentCameraLat = phaseStartLat + (phaseTargetLat - phaseStartLat) * t;
+                }
+            } else { // 'dwelling'
+                dwellRemaining -= dt;
+                if (dwellRemaining <= 0){
+                    startTravelToStop((currentStopIdx + 1) % stops.length);
+                }
+            }
             globe.pointOfView({ lat: currentCameraLat, lng: angle, altitude: CONFIG.rotation.initialAltitude });
         }
 
-        const pov = globe.pointOfView();
-        const currentLng = pov.lng;
+        // Label visibility is a continuous function of distance from wherever the camera
+        // actually is right now (read live from globe.pointOfView(), so it responds correctly
+        // whether the camera got there via the tour, "Apply View", or the user manually
+        // dragging the globe while paused) — independent of the tour's travel/dwell phase, so
+        // every nearby location fades in together rather than being gated behind a dwell or
+        // forced to cycle one at a time. "sequential"-tagged locations are the one exception:
+        // they take turns among themselves via a shared, slowly-advancing index.
+        const currentLng = globe.pointOfView().lng;
+        const w = CONFIG.rotation.labelWindowDegrees;
         const currentTime = Date.now();
 
-        if (isInSlowZone(currentLng) && cachedSequential.length && currentTime - lastSequentialUpdate > CONFIG.rotation.sequentialDisplayDuration){
-            sequentialIndex = (sequentialIndex + 1) % cachedSequential.length;
-            lastSequentialUpdate = currentTime;
+        if (cachedSequential.length){
+            const anyInRange = cachedSequential.some(inst => circDiff(inst.lng, currentLng) < w);
+            if (anyInRange && currentTime - lastSequentialUpdate > CONFIG.rotation.sequentialDisplayDuration){
+                sequentialIndex = (sequentialIndex + 1) % cachedSequential.length;
+                lastSequentialUpdate = currentTime;
+            }
         }
 
-        const w = CONFIG.rotation.labelWindowDegrees;
         document.querySelectorAll('.institution-label').forEach(label => {
-            const labelLng = parseFloat(label.dataset.lng);
-            const priority = label.dataset.priority;
-            let diff = Math.abs(labelLng - currentLng);
-            if (diff > 180) diff = 360 - diff;
-
-            if (priority === 'always'){
-                label.style.opacity = diff < w ? Math.max(0, 1 - diff / w) : 0;
-            } else if (priority === 'sequential'){
-                const cur = cachedSequential[sequentialIndex];
-                label.style.opacity = (cur && label.dataset.name === cur.name && diff < w) ? Math.max(0, 1 - diff / w) : 0;
-            } else {
-                label.style.opacity = diff < w ? Math.max(0, 1 - diff / w) : 0;
+            const diff = circDiff(parseFloat(label.dataset.lng), currentLng);
+            let opacity = 0;
+            if (diff < w){
+                if (label.dataset.priority === 'sequential'){
+                    const cur = cachedSequential[sequentialIndex];
+                    opacity = (cur && cur.name === label.dataset.name) ? Math.max(0, 1 - diff / w) : 0;
+                } else {
+                    opacity = Math.max(0, 1 - diff / w);
+                }
             }
+            label.style.opacity = opacity;
         });
 
         // Composite (and encode) at the chosen output fps, not on every display refresh.
@@ -1016,6 +1142,137 @@
         drawOverlayOnCanvas(ctx, outW, outH, scale);
     }
 
+    // Screenshot-only compositor: shows every location currently within the visibility window,
+    // ignoring "Sequential" cycling (a still image should show everything nearby at once, not
+    // whichever one happens to be mid-cycle at that instant), and resolves overlaps by nudging
+    // colliding label boxes downward with a leader line back to their actual point — video
+    // recording keeps using compositeFrame() above, which mirrors whatever's live on screen.
+    function computeExportLabelOpacity(label, currentLng, w){
+        const diff = circDiff(parseFloat(label.dataset.lng), currentLng);
+        if (diff >= w) return 0;
+        return Math.max(0, 1 - diff / w);
+    }
+
+    function resolveLabelOverlaps(boxes, gap){
+        boxes.sort((a, b) => a.y - b.y);
+        const placed = [];
+        boxes.forEach(box => {
+            let moved = true;
+            while (moved){
+                moved = false;
+                for (const p of placed){
+                    const overlap = box.x < p.x + p.w + gap && box.x + box.w + gap > p.x &&
+                                     box.y < p.y + p.h + gap && box.y + box.h + gap > p.y;
+                    if (overlap){
+                        box.y = p.y + p.h + gap;
+                        moved = true;
+                    }
+                }
+            }
+            placed.push(box);
+        });
+    }
+
+    // resolveLabelOverlaps only pushes boxes apart from each other — with enough of them
+    // stacked in one place (e.g. a dense cluster near the top or bottom of the frame), the
+    // stack can run past the canvas edge and silently clip off-screen (confirmed with a real
+    // headless-browser test: an 11-label stack in a 900px-tall frame pushed the last label to
+    // y=913, entirely invisible). This constrains the whole stack to fit: centers it vertically
+    // if it already fits in the frame, otherwise compresses the spacing (last resort — allows
+    // slight re-overlap rather than letting any label vanish off-canvas) so every visible
+    // location's label is guaranteed to actually appear somewhere in the image. Also clamps
+    // each box horizontally, independently, in case a wide label sits near the left/right edge.
+    function constrainBoxesToCanvas(boxes, canvasW, canvasH, margin){
+        if (!boxes.length) return;
+        boxes.forEach(box => {
+            box.x = Math.max(margin, Math.min(box.x, canvasW - box.w - margin));
+        });
+        const minY = Math.min(...boxes.map(b => b.y));
+        const maxY = Math.max(...boxes.map(b => b.y + b.h));
+        const totalHeight = maxY - minY;
+        const available = canvasH - margin * 2;
+        if (totalHeight <= available){
+            const offset = margin + (available - totalHeight) / 2 - minY;
+            boxes.forEach(box => { box.y += offset; });
+        } else {
+            const scale = available / totalHeight;
+            boxes.forEach(box => { box.y = margin + (box.y - minY) * scale; });
+        }
+    }
+
+    function drawResolvedLabelBox(ctx, box, scale){
+        const { label, x, y, w: boxW, h: boxH, opacity, fontPx, padX, markerX, markerY } = box;
+        ctx.save();
+        const boxCenterX = x + boxW / 2;
+        const moved = Math.abs(boxCenterX - markerX) > 2 * scale || markerY < y || markerY > y + boxH;
+        if (moved){
+            ctx.strokeStyle = label.dataset.borderColor;
+            ctx.globalAlpha = Math.min(1, opacity) * 0.8;
+            ctx.lineWidth = 1.5 * scale;
+            ctx.beginPath();
+            ctx.moveTo(markerX, markerY);
+            ctx.lineTo(boxCenterX, markerY < y ? y : y + boxH);
+            ctx.stroke();
+        }
+
+        ctx.globalAlpha = Math.min(1, opacity + 0.15);
+        roundRectPath(ctx, x, y, boxW, boxH, 6 * scale);
+        ctx.fillStyle = LABEL_BG;
+        ctx.fill();
+        ctx.lineWidth = 2.5 * scale;
+        ctx.strokeStyle = label.dataset.borderColor;
+        ctx.stroke();
+
+        ctx.font = `bold ${fontPx}px Arial`;
+        ctx.textBaseline = 'middle';
+        const textY = y + boxH / 2 + scale;
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 3 * scale;
+        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.strokeText(label.textContent, x + padX, textY);
+        ctx.fillStyle = label.dataset.textColor;
+        ctx.fillText(label.textContent, x + padX, textY);
+        ctx.restore();
+    }
+
+    function compositeFrameForScreenshot(ctx){
+        const canvasEl = globe.renderer().domElement;
+        const outW = canvasEl.width, outH = canvasEl.height;
+        if (ctx.canvas.width !== outW) ctx.canvas.width = outW;
+        if (ctx.canvas.height !== outH) ctx.canvas.height = outH;
+        ctx.drawImage(canvasEl, 0, 0, outW, outH);
+
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const scale = canvasRect.width ? outW / canvasRect.width : 1;
+        const currentLng = globe.pointOfView().lng;
+        const w = CONFIG.rotation.labelWindowDegrees;
+
+        const boxes = [];
+        document.querySelectorAll('.institution-label').forEach(label => {
+            const opacity = computeExportLabelOpacity(label, currentLng, w);
+            if (opacity <= 0.05) return;
+            const rect = label.getBoundingClientRect();
+            const cx = (rect.left + rect.width / 2 - canvasRect.left) * scale;
+            const cy = (rect.top + rect.height / 2 - canvasRect.top) * scale;
+            const fontPx = Math.round(14 * EXPORT_LABEL_BOOST * scale);
+            ctx.font = `bold ${fontPx}px Arial`;
+            const textW = ctx.measureText(label.textContent).width;
+            const padX = 12 * scale, padY = 8 * scale;
+            const boxW = textW + padX * 2, boxH = fontPx + padY * 2;
+            boxes.push({
+                label, opacity, fontPx, padX,
+                markerX: cx, markerY: cy,
+                w: boxW, h: boxH,
+                x: cx - boxW / 2, y: cy - boxH / 2
+            });
+        });
+
+        resolveLabelOverlaps(boxes, 4 * scale);
+        constrainBoxesToCanvas(boxes, outW, outH, 16 * scale);
+        boxes.forEach(box => drawResolvedLabelBox(ctx, box, scale));
+        drawOverlayOnCanvas(ctx, outW, outH, scale);
+    }
+
     function waitFrames(n){
         return new Promise(resolve => {
             let count = 0;
@@ -1076,7 +1333,7 @@
         applyExportResolution(scale);
         await waitFrames(5);
         const off = document.createElement('canvas');
-        compositeFrame(off.getContext('2d'));
+        compositeFrameForScreenshot(off.getContext('2d'));
         restoreExportResolution();
         await waitFrames(2);
         setPreviewHidden(false);
@@ -1197,6 +1454,10 @@
     // ---------------------------------------------------------------------
     function togglePause(){
         paused = !paused;
+        // Resuming picks up the tour from whichever stop is nearest ahead of wherever the
+        // camera actually is (it may have been dragged manually while paused), rather than
+        // jumping back to the start.
+        if (!paused) resumeTourFromCurrentView();
         document.getElementById('pauseBtn').textContent = paused ? 'Resume Rotation' : 'Pause Rotation';
     }
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
@@ -1207,7 +1468,7 @@
         const alt = parseFloat(document.getElementById('povAlt').value);
         if (!paused) togglePause();
         angle = ((lng % 360) + 360) % 360;
-        currentCameraLat = lat; // so resuming rotation eases on from here, not the old auto-tilt value
+        currentCameraLat = lat;
         globe.pointOfView({ lat, lng, altitude: alt }, 400);
     });
 
@@ -1220,8 +1481,7 @@
 
     document.getElementById('resetRotationBtn').addEventListener('click', () => {
         readRotationForm();
-        angle = CONFIG.rotation.startLng;
-        currentCameraLat = CONFIG.rotation.initialCameraLat;
+        resetTour();
     });
 
     document.querySelectorAll('input[name="durMode"]').forEach(r => {
@@ -1271,9 +1531,9 @@
                 <div class="field-group">
                     <label>Priority</label>
                     <select data-i="${i}" data-f="priority">
-                        <option value="normal" ${inst.priority === 'normal' ? 'selected' : ''}>Normal (show whenever in view)</option>
-                        <option value="always" ${inst.priority === 'always' ? 'selected' : ''}>Always (never hidden by others)</option>
-                        <option value="sequential" ${inst.priority === 'sequential' ? 'selected' : ''}>Sequential (cycles with others in group)</option>
+                        <option value="normal" ${(inst.priority === 'normal' || !inst.priority) ? 'selected' : ''}>Normal (shows whenever in view, alongside any others nearby)</option>
+                        <option value="always" ${inst.priority === 'always' ? 'selected' : ''}>Always (same as Normal — use for your main/highlighted location)</option>
+                        <option value="sequential" ${inst.priority === 'sequential' ? 'selected' : ''}>Sequential (takes turns with other Sequential locations, for tightly-packed groups)</option>
                     </select>
                 </div>
                 <div class="checkbox-row">
@@ -1292,9 +1552,36 @@
         list.querySelectorAll('[data-role="remove-loc"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 CONFIG.institutions.splice(parseInt(btn.dataset.i, 10), 1);
+                syncCountriesFromInstitutions();
                 renderLocationsForm();
             });
         });
+    }
+
+    // Keeps the Countries list in sync with whichever countries are actually referenced by a
+    // location: removes a country once no location uses it any more (e.g. after deleting that
+    // location, or editing its Country field away), and adds a country the moment a location
+    // references one that isn't listed yet — in both directions, without the user having to
+    // remember to edit both tabs.
+    function syncCountriesFromInstitutions(){
+        readCountriesForm(); // capture any in-progress edits on the Countries tab first, so we don't clobber them
+        const used = new Set(CONFIG.institutions.map(i => (i.country || '').trim()).filter(Boolean));
+        let changed = false;
+        Object.keys(CONFIG.countries).forEach(country => {
+            if (!used.has(country)){ delete CONFIG.countries[country]; changed = true; }
+        });
+        used.forEach(country => {
+            if (CONFIG.countries[country] === undefined){
+                CONFIG.countries[country] = CONFIG.style.defaultBorderColor || '#b39c7d';
+                changed = true;
+            }
+        });
+        const prunedDisabled = CONFIG.disabledCountries.filter(c => used.has(c));
+        if (prunedDisabled.length !== CONFIG.disabledCountries.length){
+            CONFIG.disabledCountries = prunedDisabled;
+            changed = true;
+        }
+        if (changed) renderCountriesForm();
     }
 
     document.getElementById('addLocationBtn').addEventListener('click', () => {
@@ -1314,48 +1601,48 @@
             else if (f === 'pointColor' || f === 'labelColor' || f === 'borderColor') inst[f] = input.value.trim() || undefined;
             else inst[f] = input.value;
         });
+        syncCountriesFromInstitutions();
     }
 
+    // The Countries list is entirely derived from locations (see syncCountriesFromInstitutions)
+    // — this form only lets the user recolor a country or toggle its highlight on/off, not
+    // add, remove, or rename one directly.
     function renderCountriesForm(){
         const list = document.getElementById('countriesList');
         list.innerHTML = '';
+        if (!Object.keys(CONFIG.countries).length){
+            list.innerHTML = '<div class="hint">No countries yet — add a location with a Country value on the Locations tab.</div>';
+            return;
+        }
         Object.entries(CONFIG.countries).forEach(([name, color], i) => {
+            const enabled = !CONFIG.disabledCountries.includes(name);
             const row = document.createElement('div');
-            row.className = 'country-row';
+            row.className = 'country-row' + (enabled ? '' : ' disabled');
             row.innerHTML = `
-                <input type="text" data-i="${i}" data-role="cname" value="${escAttr(name)}">
+                <input type="checkbox" data-i="${i}" data-role="cenabled" ${enabled ? 'checked' : ''} title="Show/hide this country's highlight">
+                <span class="country-name" data-role="cname" title="${escAttr(name)}">${escAttr(name)}</span>
                 <input type="color" data-i="${i}" data-role="ccolor" value="${toHex(color)}">
-                <button class="remove-btn" data-i="${i}" data-role="remove-country">✕</button>
             `;
             list.appendChild(row);
         });
-        list.querySelectorAll('[data-role="remove-country"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                readCountriesForm();
-                const names = Object.keys(CONFIG.countries);
-                delete CONFIG.countries[names[parseInt(btn.dataset.i, 10)]];
-                renderCountriesForm();
-            });
+        list.querySelectorAll('[data-role="cenabled"]').forEach(cb => {
+            cb.addEventListener('change', () => cb.closest('.country-row').classList.toggle('disabled', !cb.checked));
         });
     }
 
-    document.getElementById('addCountryBtn').addEventListener('click', () => {
-        readCountriesForm();
-        let n = 'New Country', c = 1;
-        while (CONFIG.countries[n] !== undefined) n = 'New Country ' + (++c);
-        CONFIG.countries[n] = '#b39c7d';
-        renderCountriesForm();
-    });
-
     function readCountriesForm(){
         const rows = document.querySelectorAll('#countriesList .country-row');
-        const updated = {};
+        const updatedColors = {};
+        const disabled = [];
         rows.forEach(row => {
-            const nameInput = row.querySelector('[data-role="cname"]');
+            const name = row.querySelector('[data-role="cname"]').textContent;
             const colorInput = row.querySelector('[data-role="ccolor"]');
-            if (nameInput.value.trim()) updated[nameInput.value.trim()] = colorInput.value;
+            const enabledInput = row.querySelector('[data-role="cenabled"]');
+            updatedColors[name] = colorInput.value;
+            if (!enabledInput.checked) disabled.push(name);
         });
-        CONFIG.countries = updated;
+        CONFIG.countries = updatedColors;
+        CONFIG.disabledCountries = disabled;
     }
 
     function toHex(color){
@@ -1392,14 +1679,12 @@
         document.getElementById('markerEmoji').value = CONFIG.style.markerEmoji;
         document.getElementById('pointRadius').value = CONFIG.style.pointRadius;
 
-        document.getElementById('baseSpeed').value = CONFIG.rotation.baseSpeed;
-        document.getElementById('slowZoneSpeed').value = CONFIG.rotation.slowZoneSpeed;
-        document.getElementById('slowZoneStart').value = CONFIG.rotation.slowZoneStart;
-        document.getElementById('slowZoneEnd').value = CONFIG.rotation.slowZoneEnd;
+        document.getElementById('travelSpeed').value = CONFIG.rotation.travelSpeed;
+        document.getElementById('clusterGapDegrees').value = CONFIG.rotation.clusterGapDegrees;
+        document.getElementById('labelWindowDegrees').value = CONFIG.rotation.labelWindowDegrees;
         document.getElementById('initialCameraLat').value = CONFIG.rotation.initialCameraLat;
         document.getElementById('initialAltitude').value = CONFIG.rotation.initialAltitude;
         document.getElementById('startLng').value = CONFIG.rotation.startLng;
-        document.getElementById('labelWindowDegrees').value = CONFIG.rotation.labelWindowDegrees;
         document.getElementById('sequentialDisplayDuration').value = CONFIG.rotation.sequentialDisplayDuration;
 
         document.getElementById('pageTitle').value = CONFIG.branding.pageTitle;
@@ -1431,14 +1716,12 @@
     }
 
     function readRotationForm(){
-        CONFIG.rotation.baseSpeed = parseFloat(document.getElementById('baseSpeed').value) || 0;
-        CONFIG.rotation.slowZoneSpeed = parseFloat(document.getElementById('slowZoneSpeed').value) || 0;
-        CONFIG.rotation.slowZoneStart = parseFloat(document.getElementById('slowZoneStart').value) || 0;
-        CONFIG.rotation.slowZoneEnd = parseFloat(document.getElementById('slowZoneEnd').value) || 0;
+        CONFIG.rotation.travelSpeed = parseFloat(document.getElementById('travelSpeed').value) || 1;
+        CONFIG.rotation.clusterGapDegrees = parseFloat(document.getElementById('clusterGapDegrees').value) || 0;
+        CONFIG.rotation.labelWindowDegrees = parseFloat(document.getElementById('labelWindowDegrees').value) || 30;
         CONFIG.rotation.initialCameraLat = parseFloat(document.getElementById('initialCameraLat').value) || 0;
         CONFIG.rotation.initialAltitude = parseFloat(document.getElementById('initialAltitude').value) || 1;
         CONFIG.rotation.startLng = parseFloat(document.getElementById('startLng').value) || 0;
-        CONFIG.rotation.labelWindowDegrees = parseFloat(document.getElementById('labelWindowDegrees').value) || 60;
         CONFIG.rotation.sequentialDisplayDuration = parseFloat(document.getElementById('sequentialDisplayDuration').value) || 2000;
     }
 

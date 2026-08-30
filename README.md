@@ -18,9 +18,9 @@ Built on [globe.gl](https://globe.gl) / [three.js](https://threejs.org).
 - `config.example.json` — an example configuration you can copy to `config.json` to customize the globe **without editing any code**.
 - A live **Control Panel** (gear icon, top-right) with tabs for:
   - **Locations** — add/remove/edit universities or any custom locations (name, lat/lng, country, priority, colors).
-  - **Countries** — which countries get highlighted on the map, and in what color.
+  - **Countries** — auto-populated from your locations' Country fields; recolor or toggle each one's highlight on/off.
   - **Style** — globe colors, atmosphere, marker colors, marker icon.
-  - **Rotation** — rotation speed, the "slow zone" longitude band, camera angle, label timing.
+  - **Rotation** — the guided tour: travel speed, how locations get grouped into stops, camera angle, label timing.
   - **Text** — page title and an optional on-screen caption/watermark (position, color, size).
   - **Export** — pause/orbit the camera manually, capture a PNG screenshot at any angle, or record an MP4/WebM-style video of the rotation.
   - **Config** — download/upload your whole setup as a `config.json` file, save/load it in the browser, or paste JSON directly.
@@ -33,11 +33,11 @@ Built on [globe.gl](https://globe.gl) / [three.js](https://threejs.org).
 2. Double-click `index.html` to open it in your browser (Chrome, Edge, or Firefox recommended).
 3. Click the **⚙ gear icon** top-right to open the Control Panel.
 4. Go to **Locations** and edit the sample universities, or add your own with **+ Add Location**. (The included demo data is DTU's real alliance and strategic-partner universities, as a working example — replace it with your own network.)
+   - The globe visits every location in a guided tour: it travels to each one (or each nearby *group* of locations — see "Cluster Grouping Distance" below) and pauses there, camera properly centered, before moving to the next. This guarantees every location actually gets shown, however they're spread across the map. Labels fade in based on how close they are to wherever the camera currently is — every nearby location shows at once, not one at a time.
    - `Priority`:
-     - **Always** — the label is shown whenever that point is in view (use for your main/highlighted location).
-     - **Sequential** — locations in the same "sequential" group take turns being shown one at a time as the globe passes over them (handy for a cluster of nearby institutions, e.g. several in the same country).
-     - **Normal** — shown whenever in view, like any other label.
-5. Go to **Countries** to control which countries get tinted on the map.
+     - **Normal** / **Always** — shows whenever it's near the current view (identical behavior; "Always" is just a naming convenience for your main/highlighted location).
+     - **Sequential** — takes turns with other "Sequential" locations instead of showing simultaneously. Use this only for a handful of locations packed too closely together to show all their label boxes at once without overlapping.
+5. Go to **Countries** — this list is automatic, built from your locations' Country fields; use it to recolor or toggle a country's highlight on/off.
 6. Click **✔ Apply Changes to Globe** (bottom of the panel) to see your edits.
 7. When you're happy, go to **Config → ⬇ Download config.json** and save that file **in the same folder as `index.html`**. From now on, the page will load your saved setup automatically for anyone who opens it — no panel editing needed each time.
 
@@ -51,24 +51,29 @@ That's it — you now have a fully customized globe.
 Control Panel → **Locations** → **+ Add Location**, then fill in:
 - **Name** — label text shown on the globe.
 - **Latitude / Longitude** — decimal degrees (e.g. Copenhagen ≈ `55.68, 12.57`). Look coordinates up on Google Maps: right-click a spot → the numbers shown are lat, lng.
-- **Country** — must match the country's official English name as it appears on the world map (e.g. `"United States of America"`, not `"USA"`) if you also want that country highlighted.
+- **Country** — must match the country's official English name as it appears on the world map (e.g. `"United States of America"`, not `"USA"`) if you also want that country highlighted. This also drives the Countries tab (see below) — it's built entirely from whatever's typed here.
 - **Priority** — `normal`, `always`, or `sequential` (see above).
 - **Highlight** — check this to make the location stand out using the "Highlighted Marker Style" colors (Style tab) — e.g. for your own institution.
 - Optional per-location color overrides (point/label/border) if you don't want it to use the theme defaults.
 
 ### Highlighting countries
-Control Panel → **Countries** → **+ Add Country**, type the country's name and pick a color.
+Control Panel → **Countries**. This list isn't edited directly — it's automatically built from every location's Country field, and stays in sync as you add, remove, or retype one (add/remove a location with that country, or edit a location's Country field, to change what's listed here). For each country listed, you can:
+- Pick a different highlight **color**.
+- Uncheck the box next to it to **hide its highlight** without deleting any locations — the country stays listed (in case you re-enable it later), it just won't be tinted on the globe.
 
 ### Changing the look
 Control Panel → **Style** — background, atmosphere glow, globe surface color, default vs. highlighted marker colors, and the marker icon (defaults to 📍, but can be any emoji or short text).
 
-### Rotation speed & camera
-Control Panel → **Rotation**:
-- **Base Speed** — normal rotation speed (degrees/second).
-- **Slow-Zone Speed** + **Slow Zone Start/End** — the globe slows down while a chosen longitude band is centered in view, so viewers get more time to read labels in a dense region (defaults to Europe).
-- **Camera Latitude / Altitude** — how "zoomed in" and tilted the view is.
-- **Label Visibility Window** — how many degrees of longitude a label stays visible for as it enters/leaves view.
-- **Sequential Label Duration** — how long each "sequential" location is shown before cycling to the next.
+### Rotation: the guided tour
+Control Panel → **Rotation**. The globe doesn't just spin continuously — it runs a guided tour: group nearby locations into "stops," travel eastward from one stop to the next, and pause at each one with the camera centered on it (both longitude *and* latitude) before moving on. This is what guarantees every location — Northern or Southern Hemisphere, isolated or clustered — actually gets shown, rather than sweeping past too fast to see.
+
+- **Travel Speed** — how fast the globe spins while moving between stops (degrees/second).
+- **Cluster Grouping Distance** — locations within this many degrees of longitude of each other are grouped into one stop and shown together, taking turns. This is the setting most worth tuning for your own data: a smaller value gives every location its own dedicated stop (good if your locations are spread out); a larger value groups more into shared stops (good if you have several locations clustered in one region, so the tour doesn't pause at each one individually).
+- **Starting Camera Latitude / Longitude + Camera Altitude** — where the camera starts before the tour reaches its first stop, and how zoomed in the view is throughout.
+- **Label Duration Per Location** — when a stop has multiple locations, how long each one is shown before cycling to the next (a stop's total dwell time is this × however many locations share it).
+- **Reset Tour to Start** — restarts the tour from the beginning (handy after changing these settings).
+
+With many worldwide locations, most of a full tour is spent paused at stops rather than in transit — that's expected, and is exactly what keeps every location from being missed.
 
 ### On-screen text
 Control Panel → **Text** — set the browser tab title, and optionally add a caption/watermark (e.g. "Global Research Network 2026") that appears on screen and is included in exports.

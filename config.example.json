@@ -27,14 +27,12 @@
     "markerEmoji": "📍"
   },
   "rotation": {
-    "baseSpeed": 18,
-    "slowZoneStart": 350,
-    "slowZoneEnd": 30,
-    "slowZoneSpeed": 3,
+    "travelSpeed": 25,
+    "clusterGapDegrees": 10,
+    "labelWindowDegrees": 30,
     "initialCameraLat": 50,
     "initialAltitude": 1.0,
     "startLng": 10,
-    "labelWindowDegrees": 60,
     "sequentialDisplayDuration": 2000
   },
   "countries": {
@@ -55,6 +53,7 @@
     "Australia": "#b39c7d",
     "Kenya": "#b39c7d"
   },
+  "disabledCountries": [],
   "_comment": "Demonstration data: DTU's real strategic alliances & partner universities, per https://www.dtu.dk/english/about/profile/international-collaboration/alliances-and-strategic-partnerships",
   "institutions": [
     { "name": "DTU (Technical University of Denmark)", "lat": 55.7866, "lng": 12.5231, "country": "Denmark", "priority": "always", "highlight": true },
@@ -62,11 +61,11 @@
     { "name": "Institut Polytechnique de Paris", "lat": 48.7135, "lng": 2.2075, "country": "France", "priority": "sequential", "highlight": false },
     { "name": "Technical University of Munich (TUM)", "lat": 48.1497, "lng": 11.5678, "country": "Germany", "priority": "sequential", "highlight": false },
     { "name": "Eindhoven University of Technology (TU/e)", "lat": 51.4488, "lng": 5.4900, "country": "Netherlands", "priority": "sequential", "highlight": false },
-    { "name": "Technion – Israel Institute of Technology", "lat": 32.7767, "lng": 35.0231, "country": "Israel", "priority": "sequential", "highlight": false },
-    { "name": "Chalmers University of Technology", "lat": 57.6828, "lng": 11.9764, "country": "Sweden", "priority": "normal", "highlight": false },
-    { "name": "KTH Royal Institute of Technology", "lat": 59.3498, "lng": 18.0686, "country": "Sweden", "priority": "normal", "highlight": false },
-    { "name": "NTNU (Norwegian University of Science and Technology)", "lat": 63.4194, "lng": 10.4025, "country": "Norway", "priority": "normal", "highlight": false },
-    { "name": "Aalto University", "lat": 60.1841, "lng": 24.8296, "country": "Finland", "priority": "normal", "highlight": false },
+    { "name": "Technion – Israel Institute of Technology", "lat": 32.7767, "lng": 35.0231, "country": "Israel", "priority": "normal", "highlight": false },
+    { "name": "Chalmers University of Technology", "lat": 57.6828, "lng": 11.9764, "country": "Sweden", "priority": "sequential", "highlight": false },
+    { "name": "KTH Royal Institute of Technology", "lat": 59.3498, "lng": 18.0686, "country": "Sweden", "priority": "sequential", "highlight": false },
+    { "name": "NTNU (Norwegian University of Science and Technology)", "lat": 63.4194, "lng": 10.4025, "country": "Norway", "priority": "sequential", "highlight": false },
+    { "name": "Aalto University", "lat": 60.1841, "lng": 24.8296, "country": "Finland", "priority": "sequential", "highlight": false },
     { "name": "Cornell University", "lat": 42.4534, "lng": -76.4735, "country": "USA", "priority": "normal", "highlight": false },
     { "name": "North Carolina State University", "lat": 35.7847, "lng": -78.6821, "country": "USA", "priority": "normal", "highlight": false },
     { "name": "Indian Institute of Technology Bombay (IITB)", "lat": 19.1334, "lng": 72.9133, "country": "India", "priority": "normal", "highlight": false },
