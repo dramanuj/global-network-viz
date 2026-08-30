@@ -733,16 +733,20 @@
         refreshLabelCache();
     }
 
-    // Cached list of label DOM nodes + the "sequential" subset of institutions, refreshed
-    // whenever the data changes, so the per-frame animation loop never has to query the DOM
-    // or re-filter the config — that per-frame work was contributing to the video jitter.
-    let labelElements = [];
+    // Cached "sequential" subset of institutions, refreshed whenever the data changes, so the
+    // per-frame animation loop doesn't need to re-filter the config on every tick.
+    //
+    // NOTE: the actual label *DOM elements* are intentionally NOT cached — globe.gl creates
+    // them asynchronously on its own internal render cycle after .htmlElementsData() is set,
+    // and a single requestAnimationFrame delay isn't a reliable guarantee that all of them
+    // exist yet (this previously caused whichever institutions were created last — e.g. ones
+    // near the end of a long list — to be silently skipped forever, since their opacity was
+    // never touched again). document.querySelectorAll() on ~20 simple elements is cheap enough
+    // that querying it fresh each frame isn't a meaningful cost next to the real jitter fixes
+    // (avoiding getComputedStyle, throttling video compositing, etc.).
     let cachedSequential = [];
     function refreshLabelCache(){
         cachedSequential = CONFIG.institutions.filter(i => i.priority === 'sequential');
-        requestAnimationFrame(() => {
-            labelElements = Array.from(document.querySelectorAll('.institution-label'));
-        });
     }
 
     function buildLabelElement(d){
@@ -861,7 +865,7 @@
         }
 
         const w = CONFIG.rotation.labelWindowDegrees;
-        labelElements.forEach(label => {
+        document.querySelectorAll('.institution-label').forEach(label => {
             const labelLng = parseFloat(label.dataset.lng);
             const priority = label.dataset.priority;
             let diff = Math.abs(labelLng - currentLng);
@@ -1008,7 +1012,7 @@
         ctx.drawImage(canvasEl, 0, 0, outW, outH);
         const canvasRect = canvasEl.getBoundingClientRect();
         const scale = canvasRect.width ? outW / canvasRect.width : 1;
-        labelElements.forEach(label => drawLabelOnCanvas(ctx, label, canvasRect, scale));
+        document.querySelectorAll('.institution-label').forEach(label => drawLabelOnCanvas(ctx, label, canvasRect, scale));
         drawOverlayOnCanvas(ctx, outW, outH, scale);
     }
 
