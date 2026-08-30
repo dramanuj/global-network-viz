@@ -10,7 +10,7 @@ Built on [globe.gl](https://globe.gl) / [three.js](https://threejs.org).
 
 ---
 
-## 1. What you get
+## 1. Contents
 
 - `index.html` — the whole app (globe + control panel). No build step, no dependencies to install.
 - `config.example.json` — an example configuration you can copy to `config.json` to customize the globe **without editing any code**.
@@ -25,7 +25,7 @@ Built on [globe.gl](https://globe.gl) / [three.js](https://threejs.org).
 
 ---
 
-## 2. Quick start (no coding required)
+## 2. Quick start 
 
 1. Download this folder (or clone the repo — see hosting instructions below).
 2. Double-click `index.html` to open it in your browser (Chrome, Edge, or Firefox recommended).
@@ -121,41 +121,9 @@ Control Panel → **Config**:
 
 ---
 
-## 6. Hosting it on GitHub (free, public URL)
 
-1. **Create a GitHub account** if you don't have one: [github.com/join](https://github.com/join).
-2. **Create a new repository**:
-   - Click the **+** icon (top-right on GitHub) → **New repository**.
-   - Give it a name, e.g. `institutions-globe`.
-   - Choose **Public**, then click **Create repository**.
-3. **Upload your files**:
-   - On the new repo's page, click **uploading an existing file** (or **Add file → Upload files**).
-   - Drag in `index.html`, your `config.json` (if you made one), `README.md`, and `LICENSE.md`.
-   - Scroll down and click **Commit changes**.
-4. **Turn on GitHub Pages** (this gives you a free public link):
-   - In your repo, go to **Settings → Pages** (left sidebar, under "Code and automation").
-   - Under **Source**, choose **Deploy from a branch**.
-   - Branch: `main`, folder: `/ (root)` → **Save**.
-   - Wait about a minute, then refresh the page — GitHub shows your live URL, something like:
-     `https://YOUR-USERNAME.github.io/institutions-globe/`
-5. Visit that link — your globe is now live and shareable with anyone.
 
-**Updating it later:** edit files directly on GitHub (pencil icon on any file) or upload a replacement `config.json`/`index.html` — GitHub Pages redeploys automatically within a minute or two of each commit.
-
-**Using git from the command line instead**, if you prefer:
-```bash
-git init
-git add index.html config.json README.md LICENSE.md config.example.json
-git commit -m "Initial globe setup"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/institutions-globe.git
-git push -u origin main
-```
-Then enable Pages as in step 4 above.
-
----
-
-## 7. License & attribution
+## 6. License & attribution
 
 Free for **non-commercial use**, with **attribution required**. Full terms in [LICENSE.md](LICENSE.md) (Creative Commons BY-NC 4.0).
 
