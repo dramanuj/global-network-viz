@@ -2,6 +2,8 @@
 
 An interactive, rotating 3D globe that highlights a network of institutions (universities, research centers, offices — anything with a location) with animated labels, country highlighting, and a built-in **Control Panel** for customizing everything without touching code. Includes one-click **screenshot** and **video export** of the rotation.
 
+Demo: [http://dramanuj.github.io/global-network-viz/index.html](http://dramanuj.github.io/global-network-viz/index.html).
+
 Built on [globe.gl](https://globe.gl) / [three.js](https://threejs.org).
 
 > **Attribution required.** This project is free to use for **non-commercial purposes only**, provided you credit the original author. See [LICENSE.md](LICENSE.md) for the full terms.
