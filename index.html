@@ -688,6 +688,14 @@
     let cachedSequential = [];
     let sequentialIndex = 0;
     let lastSequentialUpdate = 0;
+    // While actually dwelling at a stop, cycling is scoped to just that stop's own
+    // "sequential"-tagged members (see startDwellAtStop) instead of the global list above —
+    // otherwise a shared round-robin spanning every sequential location on the globe could
+    // arrive at a stop already mid-cycle or interleaved with an unrelated stop elsewhere, so the
+    // dwell time budgeted for *this* stop's member count wasn't enough to guarantee each of them
+    // got a turn. Harmless for a live viewer (the tour loops forever and eventually catches
+    // everyone) but fatal for a one-pass video export, where a missed turn is missed for good.
+    let dwellSequential = [];
 
     // ---------------------------------------------------------------------
     // Guided tour: the globe visits every "stop" (one or more nearby locations, grouped by
@@ -779,6 +787,12 @@
         const perMember = Math.max(0.3, CONFIG.rotation.sequentialDisplayDuration / 1000);
         dwellRemaining = Math.max(perMember, stop.institutions.length * perMember);
         tourPhase = 'dwelling';
+
+        // Restart the sequential round-robin cleanly for this stop alone (see dwellSequential
+        // above) so the dwell time just computed is guaranteed to cover every one of its members.
+        dwellSequential = stop.institutions.filter(i => i.priority === 'sequential');
+        sequentialIndex = 0;
+        lastSequentialUpdate = Date.now();
     }
 
     // Recomputes the stop list (call whenever the location data changes) and restarts the tour
@@ -985,10 +999,11 @@
         const w = CONFIG.rotation.labelWindowDegrees;
         const currentTime = Date.now();
 
-        if (cachedSequential.length){
-            const anyInRange = cachedSequential.some(inst => circDiff(inst.lng, currentLng) < w);
+        const activeSequential = (tourPhase === 'dwelling' && dwellSequential.length) ? dwellSequential : cachedSequential;
+        if (activeSequential.length){
+            const anyInRange = activeSequential.some(inst => circDiff(inst.lng, currentLng) < w);
             if (anyInRange && currentTime - lastSequentialUpdate > CONFIG.rotation.sequentialDisplayDuration){
-                sequentialIndex = (sequentialIndex + 1) % cachedSequential.length;
+                sequentialIndex = (sequentialIndex + 1) % activeSequential.length;
                 lastSequentialUpdate = currentTime;
             }
         }
@@ -998,7 +1013,7 @@
             let opacity = 0;
             if (diff < w){
                 if (label.dataset.priority === 'sequential'){
-                    const cur = cachedSequential[sequentialIndex];
+                    const cur = activeSequential[sequentialIndex];
                     opacity = (cur && cur.name === label.dataset.name) ? Math.max(0, 1 - diff / w) : 0;
                 } else {
                     opacity = Math.max(0, 1 - diff / w);
