@@ -8,7 +8,7 @@ Built on [globe.gl](https://globe.gl) / [three.js](https://threejs.org).
 
 > **Attribution required.** This project is free to use for **non-commercial purposes only**, provided you credit the original author. See [LICENSE.md](LICENSE.md) for the full terms.
 >
-> Original design & build: **[github.com/dramanuj](https://github.com/dramanuj)**
+> Original design & build: **[github.com/dramanuj](https://github.com/dramanuj)** with support from Claude Code.
 
 ---
 
